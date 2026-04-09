@@ -1,0 +1,129 @@
+monitor Cine {
+    int ClienteActual;
+    
+    int Ticket;
+    int TicketPop;
+    
+    int reqTicket;
+    int ackTicket;
+    int reqPop;
+    int ackPop;
+
+    condition esperaEmptyTicket;
+    condition esperaFullTicket;
+    condition esperaTicketEntregado;
+
+    condition esperaEmptyPop;
+    condition esperaFullPop;
+    condition esperaPopEntregado;
+
+    int obtenerId() {
+        int id; 
+        id = ClienteActual;
+        ClienteActual = ClienteActual + 1;
+        return id;
+    }
+
+    // --- TICKETS ---
+    void solicitarTicket(int miId) {
+        cout << "Cliente " << miId << " solicita entrada" << endl;
+        
+        if (reqTicket == 1) {
+            waitc(esperaEmptyTicket);
+        }
+        Ticket = miId;
+        reqTicket = 1;
+        signalc(esperaFullTicket);
+
+        if (ackTicket == 0) {
+            waitc(esperaTicketEntregado);
+        }
+        ackTicket = 0;
+    }
+
+    void entregarTicket() {
+        int N;
+        if (reqTicket == 0) {
+            waitc(esperaFullTicket);
+        }
+        N = Ticket;
+        cout << "Dispensador entrega ticket al cliente " << N << endl;
+        reqTicket = 0;
+        signalc(esperaEmptyTicket);
+
+        ackTicket = 1;
+        signalc(esperaTicketEntregado);
+    }
+
+    // --- PALOMITAS ---
+    void solicitarPalomitas(int miId) {
+        cout << "Cliente " << miId << " solicita palomitas" << endl;
+        
+        if (reqPop == 1) {
+            waitc(esperaEmptyPop);
+        }
+        TicketPop = miId;
+        reqPop = 1;
+        signalc(esperaFullPop);
+
+        if (ackPop == 0) {
+            waitc(esperaPopEntregado);
+        }
+        ackPop = 0;
+        
+        cout << "Cliente " << miId << " entra al cine" << endl;
+    }
+
+    void entregarPalomitas() {
+        int N;
+        if (reqPop == 0) {
+            waitc(esperaFullPop);
+        }
+        N = TicketPop;
+        cout << "Dispensador entrega palomitas al cliente " << N << endl;
+        reqPop = 0;
+        signalc(esperaEmptyPop);
+
+        ackPop = 1;
+        signalc(esperaPopEntregado);
+    }
+
+    init {
+        ClienteActual = 1;
+        reqTicket = 0;
+        ackTicket = 0;
+        reqPop = 0;
+        ackPop = 0;
+    }
+}
+
+void Cliente() {
+    int miId;
+    miId = obtenerId(); 
+
+    solicitarTicket(miId); 
+    solicitarPalomitas(miId); 
+}
+
+void DispensadorTickets() {
+    int i;
+    for (i = 0; i < 3; i++) {
+        entregarTicket();
+    }
+}
+
+void DispensadorPalomitas() {
+    int i;
+    for (i = 0; i < 3; i++) {
+        entregarPalomitas();
+    }
+}
+
+void main() {
+    cobegin {
+        DispensadorPalomitas();
+        Cliente();
+        Cliente();
+        Cliente();
+    }
+}

@@ -1,0 +1,86 @@
+semaphore EmptyTicket = 1;
+semaphore FullTicket = 0;
+semaphore TicketEntregado = 0;
+
+semaphore EmptyPop = 1;
+semaphore FullPop = 0;
+semaphore PopEntregado = 0;
+
+semaphore mutex = 1;
+semaphore print_mutex = 1;
+
+int Ticket;
+int TicketPop;
+int ClienteActual;
+
+void Cliente() {
+    int miId;
+    wait(mutex);
+        miId = ClienteActual;
+        ClienteActual = ClienteActual + 1;
+    signal(mutex);
+
+    wait(print_mutex);
+        cout << "Cliente " << miId << " solicita entrada" << endl;
+    signal(print_mutex);
+
+    wait(EmptyTicket);
+        Ticket = miId;
+    signal(FullTicket);
+    
+    wait(TicketEntregado);
+
+    wait(print_mutex);
+        cout << "Cliente " << miId << " solicita palomitas" << endl;
+    signal(print_mutex);
+
+    wait(EmptyPop);
+        TicketPop = miId;
+    signal(FullPop);
+    
+    wait(PopEntregado);
+
+    wait(print_mutex);
+        cout << "Cliente " << miId << " entra al cine" << endl;
+    signal(print_mutex);
+}
+
+void DispensadorTickets() {
+    int N;
+    int i;
+    for (i = 0; i < 3; i++) {
+        wait(FullTicket);
+            N = Ticket;
+            wait(print_mutex);
+                cout << "Dispensador entrega ticket al cliente " << N << endl;
+            signal(print_mutex);
+        signal(TicketEntregado);
+        signal(EmptyTicket);
+    }
+}
+
+void DispensadorPalomitas() {
+    int N;
+    int i;
+    for (i = 0; i < 3; i++) {
+        wait(FullPop);
+            N = TicketPop;
+            wait(print_mutex);
+                cout << "Dispensador entrega palomitas al cliente " << N << endl;
+            signal(print_mutex);
+        signal(PopEntregado);
+        signal(EmptyPop);
+    }
+}
+
+void main() {
+    ClienteActual = 1;
+    cobegin {
+        DispensadorTickets();
+	DispensadorTickets();
+
+        Cliente();
+        Cliente();
+        Cliente();
+    }
+}
